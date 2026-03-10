@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
 
@@ -360,12 +360,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def get_user_by_email(db: AsyncIOMotorDatabase, email: str) -> Optional[dict]:
-    return db["users"].find_one({"email": email})
+async def get_user_by_email(db: AsyncIOMotorDatabase, email: str) -> Optional[dict]:
+    return await db["users"].find_one({"email": email})
 
 
-def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str) -> Optional[dict]:
-    user = get_user_by_email(db, email)
+async def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str) -> Optional[dict]:
+    user = await get_user_by_email(db, email)
     if not user:
         return None
     if not verify_password(password, user.get("hashed_password", "")):
@@ -373,7 +373,7 @@ def authenticate_user(db: AsyncIOMotorDatabase, email: str, password: str) -> Op
     return user
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -387,7 +387,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
-    user = get_user_by_email(get_db(), token_data.email)
+    user = await get_user_by_email(get_db(), token_data.email)
     if user is None:
         raise credentials_exception
     return user
@@ -759,7 +759,7 @@ async def register(user: UserCreate):
 @app.post("/api/auth/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     db = get_db()
-    user = authenticate_user(db, form_data.username, form_data.password)
+    user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Incorrect email or password", headers={"WWW-Authenticate": "Bearer"})
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -775,12 +775,12 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
 
 
 @app.get("/api/auth/google")
-def google_login(request: "Request"):
+async def google_login(request: "Request"):
     redirect_uri = request.url_for("google_callback")
-    return oauth.google.authorize_redirect(request, redirect_uri)
+    return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@app.route("/api/auth/google/callback")
+@app.get("/api/auth/google/callback")
 async def google_callback(request: "Request"):
     token = await oauth.google.authorize_access_token(request)
     user_info = await oauth.google.parse_id_token(request, token)
@@ -796,7 +796,10 @@ async def google_callback(request: "Request"):
         user = await db["users"].find_one({"_id": result.inserted_id})
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": user["email"]}, expires_delta=access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer"}
+    # redirect back to frontend with token in query
+    from fastapi.responses import RedirectResponse
+    frontend = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    return RedirectResponse(f"{frontend}/?token={access_token}")
 
 
 # endpoint for frontend to check module availability

@@ -1,4 +1,5 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import { 
   LayoutDashboard, 
   Calculator, 
@@ -17,28 +18,41 @@ import {
   RefreshCcw,
   ArrowUpRight
 } from "lucide-react";
-import { useState } from "react";
 import { Toaster } from "./ui/sonner";
 import { Button } from "./ui/button";
 import { useTaxData } from "../providers/TaxDataProvider";
 import { Footer } from "./Footer";
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/calculator", label: "Tax Calculator", icon: Calculator },
-  { path: "/assistant", label: "AI Assistant", icon: MessageSquare },
-  { path: "/deductions", label: "Deductions", icon: Tags },
-  { path: "/expenses", label: "Expenses", icon: Receipt },
-  { path: "/documents", label: "Documents", icon: FileText },
-  { path: "/scenarios", label: "Scenarios", icon: TrendingUp },
-  { path: "/reports", label: "Multi-Year Report", icon: BarChart3 },
+  { path: "/app", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/app/calculator", label: "Tax Calculator", icon: Calculator },
+  { path: "/app/assistant", label: "AI Assistant", icon: MessageSquare },
+  { path: "/app/deductions", label: "Deductions", icon: Tags },
+  { path: "/app/expenses", label: "Expenses", icon: Receipt },
+  { path: "/app/documents", label: "Documents", icon: FileText },
+  { path: "/app/scenarios", label: "Scenarios", icon: TrendingUp },
+  { path: "/app/reports", label: "Multi-Year Report", icon: BarChart3 },
 ];
 
 export function Layout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const { dashboard, refreshAll, isLoading, user } = useTaxData();
+  const { dashboard, refreshAll, isLoading, user, logout } = useTaxData();
+  const navigate = useNavigate();
   const summary = dashboard?.summary;
+  const currentItem = navItems.find((n) => n.path === location.pathname);
+  const pageTitle = currentItem ? currentItem.label : "";
+
+  useEffect(() => {
+    // simple guard: if not logged in redirect to login (except auth/landing paths)
+    if (
+      !user &&
+      !["/login", "/register", "/"].includes(location.pathname) &&
+      !location.pathname.startsWith("/api")
+    ) {
+      navigate("/login", { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
 
   return (
     <>
@@ -138,7 +152,7 @@ export function Layout() {
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Tax operations</p>
                 <div className="mt-1 flex items-center gap-3">
                   <Sparkles className="size-5 text-chart-3" />
-                  <h2 className="text-xl font-bold">AI-guided financial control room</h2>
+                  <h2 className="text-xl font-bold">{pageTitle || "AI-guided financial control room"}</h2>
                 </div>
               </div>
 
@@ -160,9 +174,12 @@ export function Layout() {
                 </Button>
                 {/* auth links */}
                 {user ? (
-                  <Link to="/profile" className="text-sm text-primary hover:underline">
-                    Profile
-                  </Link>
+                  <button
+                    onClick={() => logout()}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Logout
+                  </button>
                 ) : (
                   <div className="flex gap-2">
                     <Link to="/login" className="text-sm text-primary hover:underline">

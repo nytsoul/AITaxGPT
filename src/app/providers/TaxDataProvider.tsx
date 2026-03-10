@@ -68,6 +68,9 @@ interface TaxDataContextValue {
 const TaxDataContext = createContext<TaxDataContextValue | null>(null);
 
 export function TaxDataProvider({ children }: { children: ReactNode }) {
+  // toggle fake auth; set VITE_USE_DUMMY_AUTH=1 in .env to enable
+  const USE_DUMMY_AUTH = import.meta.env.VITE_USE_DUMMY_AUTH === "1";
+
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [calculator, setCalculator] = useState<CalculatorResponse | null>(null);
   const [assistant, setAssistant] = useState<AssistantResponse | null>(null);
@@ -121,6 +124,26 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // capture token from query string (google callback)
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get("token");
+    if (tokenParam) {
+      setAuthToken(tokenParam);
+      localStorage.setItem("authToken", tokenParam);
+      api.getCurrentUser()
+        .then((u) => setUser(u))
+        .catch(() => {
+          setAuthToken(null);
+          localStorage.removeItem("authToken");
+        });
+      // remove token from url
+      params.delete("token");
+      const newUrl = `${window.location.pathname}${
+        params.toString() ? "?" + params.toString() : ""
+      }`;
+      window.history.replaceState({}, "", newUrl);
+    }
+
     void refreshAll();
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -198,6 +221,14 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
 
   // authentication helpers
   const login = useCallback(async (username: string, password: string) => {
+    if (USE_DUMMY_AUTH) {
+      if (!username || !password) throw new Error("Email and password required");
+      const fakeToken = crypto.randomUUID();
+      setAuthToken(fakeToken);
+      localStorage.setItem("authToken", fakeToken);
+      setUser({ id: "user-1", email: username, full_name: "Test User" });
+      return;
+    }
     const tokenResp = await api.login({ username, password });
     // store token
     setAuthToken(tokenResp.access_token);
@@ -207,6 +238,11 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, full_name: string | undefined, password: string) => {
+    if (USE_DUMMY_AUTH) {
+      // just call login
+      await login(email, password);
+      return;
+    }
     await api.register({ email, full_name, password });
     // automatically log in after register
     await login(email, password);

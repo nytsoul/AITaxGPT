@@ -11,13 +11,15 @@ import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { Profile } from "./components/Profile";
+import { Landing } from "./components/Landing";
 
 export const router = createBrowserRouter([
   { path: "/login", Component: Login },
   { path: "/register", Component: Register },
   { path: "/profile", Component: Profile },
+  { path: "/", Component: Landing },
   {
-    path: "/",
+    path: "/app",
     Component: Layout,
     children: [
       { index: true, Component: Dashboard },
