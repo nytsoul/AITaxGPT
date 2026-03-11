@@ -31,13 +31,13 @@
   --chart-4: #3b82f6;
   --chart-5: #ef4444;
   --radius: 1rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
+  --sidebar: #020617;
+  --sidebar-foreground: #f8fafc;
   --sidebar-primary: #0d9488;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
   --sidebar-ring: #0d9488;
 }
 

@@ -340,11 +340,11 @@ deduction_categories = [
 ]
 
 assistant_suggested_questions = [
-    "How can I reduce my tax bill this quarter?",
-    "What deductions am I still missing?",
-    "How much should I set aside for freelance taxes?",
-    "What documents are still missing?",
-    "Show me a tax-saving investment strategy.",
+    "How can I reduce my tax?",
+    "Show my audit risk score",
+    "What deductions am I missing?",
+    "Explain my self-employment tax",
+    "Run an investment scenario",
 ]
 
 
@@ -564,6 +564,70 @@ async def calculator_result(db: AsyncIOMotorDatabase, user_id: str) -> dict:
     }
 
 
+def tax_health_check(profile: dict, deductions: list[dict], expenses: list[dict], documents: list[dict]) -> dict:
+    issues = []
+    score = 100
+    
+    # Check for missing income sources (common for freelancers)
+    if profile.get("freelance", 0) > 0 and len([e for e in expenses if e["category"] == "business"]) == 0:
+        issues.append({"type": "error", "message": "Freelance income found but no business expenses recorded. You may be overpaying tax."})
+        score -= 15
+        
+    # Check for low document coverage
+    processed_docs = len([d for d in documents if d["status"] == "processed"])
+    if len(documents) > 0:
+        coverage = (processed_docs / len(documents)) * 100
+        if coverage < 50:
+            issues.append({"type": "warning", "message": f"Low document coverage ({round(coverage)}%). Incomplete evidence increases audit risk."})
+            score -= 20
+
+    # High expense to income ratio check
+    income = total_income_calc(profile)
+    expense_total = sum(e["amount"] for e in expenses)
+    if income > 0 and (expense_total / income) > 0.6:
+        issues.append({"type": "risk", "message": "High-expense-to-income ratio detected. This is a common IRS audit trigger."})
+        score -= 25
+
+    # Check for unapplied but high-value deductions
+    unapplied = [d for d in deductions if not d.get("applied", False) and d.get("amount", 0) > 5000]
+    if unapplied:
+        issues.append({"type": "opportunity", "message": f"High-value deduction ({unapplied[0]['type']}) is unapplied. Save up to ${round(unapplied[0]['amount'] * 0.22):,} instantly."})
+        score -= 5 # Neutral but worth noting
+
+    return {
+        "score": max(score, 0),
+        "status": "Healthy" if score > 80 else "Attention Required" if score > 50 else "High Risk",
+        "issues": issues
+    }
+
+def get_notifications(user_id: str, deadlines: list[dict], health: dict) -> list[dict]:
+    notes = []
+    # Add deadline alerts
+    for d in deadlines:
+        days = d.get("daysLeft", 99)
+        if days < 30:
+            notes.append({
+                "id": str(uuid4()),
+                "title": f"Deadline Approaching: {d['title']}",
+                "message": f"You have {days} days left until {d['date']}. Avoid late penalties.",
+                "type": "deadline",
+                "timestamp": datetime.utcnow().isoformat()
+            })
+    
+    # Add health alerts
+    for issue in health["issues"]:
+        if issue["type"] in ["error", "risk"]:
+            notes.append({
+                "id": str(uuid4()),
+                "title": "System Alert",
+                "message": issue["message"],
+                "type": issue["type"],
+                "timestamp": datetime.utcnow().isoformat()
+            })
+            
+    return notes
+
+
 async def ai_response(db: AsyncIOMotorDatabase, user_id: str, message: str) -> str:
     profile = await get_user_calculator_profile(db, user_id)
     user_deductions = await get_user_deductions(db, user_id)
@@ -699,6 +763,8 @@ async def dashboard_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
             {"title": "Reconcile receipts", "description": f"Track ${expense_total:,} in expenses and confirm deductibility.", "path": "/app/expenses"},
             {"title": "Upload missing documents", "description": "Complete the file set before quarter-end filing deadlines.", "path": "/app/documents"},
         ],
+        "health": tax_health_check(profile, user_deductions, user_expenses, user_documents),
+        "notifications": get_notifications(user_id, deadlines, tax_health_check(profile, user_deductions, user_expenses, user_documents)),
     }
 
 

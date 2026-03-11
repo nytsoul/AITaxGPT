@@ -98,11 +98,11 @@ export function Layout() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-black/10 p-3">
+                  <div className="rounded-xl bg-white/5 p-3">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">Income</p>
                     <p className="mt-1 text-lg font-bold">${summary?.totalIncome.toLocaleString() ?? "--"}</p>
                   </div>
-                  <div className="rounded-xl bg-black/10 p-3">
+                  <div className="rounded-xl bg-white/5 p-3">
                     <p className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">Tax</p>
                     <p className="mt-1 text-lg font-bold">${summary?.estimatedTax.toLocaleString() ?? "--"}</p>
                   </div>
@@ -140,14 +140,26 @@ export function Layout() {
 
           <div className="border-t border-sidebar-border px-3 py-4">
             <div className="space-y-1">
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sidebar-foreground/72 transition hover:bg-sidebar-accent hover:text-sidebar-foreground">
+              <Link
+                to="/app/notifications"
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 transition ${location.pathname === '/app/notifications'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  }`}
+              >
                 <Bell className="size-5 flex-shrink-0" />
                 {!collapsed && <span className="text-sm">Notifications</span>}
-              </button>
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sidebar-foreground/72 transition hover:bg-sidebar-accent hover:text-sidebar-foreground">
+              </Link>
+              <Link
+                to="/app/settings"
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 transition ${location.pathname === '/app/settings'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  }`}
+              >
                 <Settings className="size-5 flex-shrink-0" />
                 {!collapsed && <span className="text-sm">Settings</span>}
-              </button>
+              </Link>
             </div>
           </div>
         </aside>
@@ -206,7 +218,7 @@ export function Layout() {
           </div>
         )}
 
-        <main className="flex-1 overflow-auto w-full">
+        <main className="flex-1 overflow-auto w-full flex flex-col min-h-screen">
           <div className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
             <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
               <div className="flex items-center gap-4">
@@ -228,6 +240,44 @@ export function Layout() {
               </div>
 
               <div className="flex items-center gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('notification-panel');
+                      if (el) el.classList.toggle('hidden');
+                    }}
+                    className="flex size-10 items-center justify-center rounded-xl bg-card border border-border/70 text-muted-foreground hover:bg-secondary transition-colors relative"
+                  >
+                    <Bell className="size-5" />
+                    {dashboard?.notifications && dashboard.notifications.length > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-background">
+                        {dashboard.notifications.length}
+                      </span>
+                    )}
+                  </button>
+
+                  <div id="notification-panel" className="absolute right-0 mt-3 w-80 hidden rounded-2xl border border-border/70 bg-card shadow-xl z-50 overflow-hidden">
+                    <div className="border-b border-border/60 bg-secondary/50 p-4">
+                      <p className="text-sm font-bold">Notifications</p>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {dashboard?.notifications && dashboard.notifications.length > 0 ? (
+                        dashboard.notifications.map((note) => (
+                          <div key={note.id} className="p-4 border-b border-border/40 hover:bg-secondary/30 transition-colors last:border-0">
+                            <p className="text-xs font-bold text-primary mb-1">{note.title}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{note.message}</p>
+                            <p className="text-[10px] text-muted-foreground/50 mt-2">{new Date(note.timestamp).toLocaleTimeString()}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center">
+                          <p className="text-xs text-muted-foreground italic">No new notifications</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {!collapsed && summary && (
                   <div className="hidden rounded-2xl border border-border/70 bg-card px-4 py-3 text-right shadow-sm md:block">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Effective rate</p>
@@ -266,12 +316,12 @@ export function Layout() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-[1680px] px-4 py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto max-w-[1680px] px-4 py-6 lg:px-8 lg:py-8 flex-1">
             <Outlet />
           </div>
+          <Footer />
         </main>
       </div>
-      <Footer />
       <Toaster />
     </>
   );

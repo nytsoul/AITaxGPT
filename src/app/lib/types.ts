@@ -100,6 +100,21 @@ export interface DashboardResponse {
     description: string;
     path: string;
   }>;
+  health: {
+    score: number;
+    status: string;
+    issues: Array<{
+      type: "error" | "warning" | "risk" | "opportunity";
+      message: string;
+    }>;
+  };
+  notifications: Array<{
+    id: string;
+    title: string;
+    message: string;
+    type: string;
+    timestamp: string;
+  }>;
 }
 
 export interface CalculatorInput {

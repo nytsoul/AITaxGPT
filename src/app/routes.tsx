@@ -12,6 +12,8 @@ import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { Profile } from "./components/Profile";
 import { Landing } from "./components/Landing";
+import { Notifications } from "./components/Notifications";
+import { Settings } from "./components/Settings";
 
 export const router = createBrowserRouter([
   { path: "/login", Component: Login },
@@ -30,6 +32,8 @@ export const router = createBrowserRouter([
       { path: "documents", Component: Documents },
       { path: "scenarios", Component: Scenarios },
       { path: "reports", Component: Reports },
+      { path: "notifications", Component: Notifications },
+      { path: "settings", Component: Settings },
     ],
   },
 ]);

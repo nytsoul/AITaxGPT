@@ -12,7 +12,7 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowRight, CalendarClock, FolderCheck, ReceiptText, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, FolderCheck, ReceiptText, Wallet, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -111,6 +111,39 @@ export function Dashboard() {
         </Card>
 
         <div className="space-y-4">
+          <Card className="border-border/70 bg-card/90 shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ShieldCheck className="size-5 text-primary" />
+                Audit Risk & Health
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-3xl font-bold">{dashboard.health.score}/100</p>
+                  <p className={`text-sm font-medium ${dashboard.health.score > 80 ? 'text-emerald-600' : dashboard.health.score > 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {dashboard.health.status}
+                  </p>
+                </div>
+                <div className="size-12 rounded-full border-4 border-secondary flex items-center justify-center text-xs font-bold" style={{ borderColor: dashboard.health.score > 80 ? '#10b981' : dashboard.health.score > 50 ? '#f59e0b' : '#ef4444' }}>
+                  {dashboard.health.score}%
+                </div>
+              </div>
+              <div className="space-y-2">
+                {dashboard.health.issues.map((issue, i) => (
+                  <div key={i} className="flex gap-2 text-xs p-2 rounded-lg bg-secondary/50 border border-border/40">
+                    <AlertTriangle className={`size-3.5 mt-0.5 shrink-0 ${issue.type === 'error' || issue.type === 'risk' ? 'text-red-500' : 'text-amber-500'}`} />
+                    <span>{issue.message}</span>
+                  </div>
+                ))}
+                {dashboard.health.issues.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic text-center py-2">No critical issues detected. Your profile is optimized.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {dashboard.alerts.map((alert) => (
             <Card key={alert.title} className="border-border/70 bg-card/90 shadow-sm">
               <CardContent className="p-6">
