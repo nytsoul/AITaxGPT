@@ -80,8 +80,8 @@ export function Deductions() {
                 <CardDescription>{group.items.length} deduction entries returned by the backend.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {group.items.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between rounded-3xl border border-border/60 bg-background/70 p-5">
+                {group.items.map((item, idx) => (
+                  <div key={`${item.id}-${group.title}-${idx}`} className="flex items-start justify-between rounded-3xl border border-border/60 bg-background/70 p-5">
                     <div className="flex gap-3">
                       <div className={`rounded-2xl p-3 ${item.applied ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                         {item.applied ? <CheckCircle2 className="size-5" /> : <XCircle className="size-5" />}
@@ -107,8 +107,8 @@ export function Deductions() {
               <CardDescription>Each recommendation is based on the current saved tax profile.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {deductions.recommendations.map((item) => (
-                <div key={item.title} className="rounded-3xl border border-border/60 bg-background/70 p-5">
+              {deductions.recommendations.map((item, idx) => (
+                <div key={`${item.title}-${idx}`} className="rounded-3xl border border-border/60 bg-background/70 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="max-w-2xl">
                       <div className="flex items-center gap-2">
@@ -143,8 +143,8 @@ export function Deductions() {
                 <CardDescription>{category.description}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {category.items.map((item) => (
-                  <div key={item.name} className="rounded-3xl border border-border/60 bg-background/70 p-5">
+                {category.items.map((item, idx) => (
+                  <div key={`${item.name}-${category.name}-${idx}`} className="rounded-3xl border border-border/60 bg-background/70 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <p className="font-semibold">{item.name}</p>
                       {item.max ? <Badge className="rounded-full bg-secondary px-3 py-1 text-primary shadow-none">Max {currency(item.max)}</Badge> : <ShieldCheck className="size-4 text-muted-foreground" />}

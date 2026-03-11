@@ -153,8 +153,8 @@ export function Expenses() {
         <AlertDescription>
           <p className="mb-2 font-medium text-blue-900">Backend suggestions</p>
           <div className="space-y-1 text-sm text-blue-700">
-            {expenses.aiSuggestions.map((suggestion) => (
-              <p key={suggestion}>• {suggestion}</p>
+            {expenses.aiSuggestions.map((suggestion, idx) => (
+              <p key={`${suggestion}-${idx}`}>• {suggestion}</p>
             ))}
           </div>
         </AlertDescription>
@@ -216,8 +216,8 @@ export function Expenses() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
+                {filteredExpenses.map((expense, idx) => (
+                  <TableRow key={`${expense.id}-${idx}`}>
                     <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                     <TableCell className="font-medium">{expense.description}</TableCell>
                     <TableCell>
