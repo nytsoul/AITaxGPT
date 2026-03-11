@@ -7,7 +7,7 @@
     "build": "vite build",
     "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\"",
     "dev:frontend": "vite",
-    "dev:backend": "python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
+    "dev:backend": "python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

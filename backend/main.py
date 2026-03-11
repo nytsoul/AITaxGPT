@@ -49,7 +49,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -660,11 +660,24 @@ async def ai_response(db: AsyncIOMotorDatabase, user_id: str, message: str) -> s
                 {
                     "role": "system",
                     "content": (
-                        "You are a professional tax assistant for TaxGPT. "
-                        "You provide concise, helpful, and accurate tax planning advice based on the user's specific profile data provided in the context. "
-                        "Always reference their real numbers when answering. "
-                        "If a question is not about taxes or finance, politely steer them back. "
-                        "Keep responses professional and easy to read with bullet points if needed."
+                        "You are TaxGPT, a premium AI tax strategist. "
+                        "You answer tax questions using the user's real financial data provided in the context. "
+                        "IMPORTANT: Format your responses using special rich blocks that the UI will render as visual cards. "
+                        "Use these blocks ONLY when relevant — do not overuse them:\n\n"
+                        "[CARD:emoji|title|value] — for key financial metrics. Example: [CARD:💰|Total Income|$95,000]\n"
+                        "[TIP:text] — for a helpful green tip or recommendation. Example: [TIP:Max out your 401(k) to save $2,200.]\n"
+                        "[ALERT:text] — for a warning or risk. Example: [ALERT:High expense ratio may trigger an audit.]\n"
+                        "[ACTION:label|description] — for an actionable next step. Example: [ACTION:Review Deductions|Activate your home office deduction.]\n\n"
+                        "Rules:\n"
+                        "- Always start with 1-2 CARD blocks when the user asks about their numbers.\n"
+                        "- Add a TIP block for every savings opportunity.\n"
+                        "- Add an ALERT block for any risk you detect.\n"
+                        "- Add 1-2 ACTION blocks at the end of every response.\n"
+                        "- Write normal conversational text BETWEEN the blocks.\n"
+                        "- Never use markdown headers (##). Use bullet points for lists.\n"
+                        "- Keep the overall response concise and easy to scan.\n"
+                        "- Reference the user's REAL numbers from the context.\n"
+                        "- If the question is not tax-related, politely steer back."
                     )
                 },
                 {
@@ -673,7 +686,7 @@ async def ai_response(db: AsyncIOMotorDatabase, user_id: str, message: str) -> s
                 }
             ],
             temperature=0.7,
-            max_tokens=1024,
+            max_tokens=1200,
         )
         return completion.choices[0].message.content
     except Exception as e:
