@@ -1,13 +1,13 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { 
-  LayoutDashboard, 
-  Calculator, 
-  MessageSquare, 
-  Tags, 
-  Receipt, 
-  FileText, 
-  TrendingUp, 
+import {
+  LayoutDashboard,
+  Calculator,
+  MessageSquare,
+  Tags,
+  Receipt,
+  FileText,
+  TrendingUp,
   BarChart3,
   Bell,
   Settings,
@@ -16,7 +16,9 @@ import {
   ShieldCheck,
   Sparkles,
   RefreshCcw,
-  ArrowUpRight
+  ArrowUpRight,
+  Menu,
+  X
 } from "lucide-react";
 import { Toaster } from "./ui/sonner";
 import { Button } from "./ui/button";
@@ -37,11 +39,17 @@ const navItems = [
 export function Layout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { dashboard, refreshAll, isLoading, user, logout } = useTaxData();
   const navigate = useNavigate();
   const summary = dashboard?.summary;
   const currentItem = navItems.find((n) => n.path === location.pathname);
   const pageTitle = currentItem ? currentItem.label : "";
+
+  useEffect(() => {
+    // Close mobile sidebars on navigation
+    setIsMobileOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     // simple guard: if not logged in redirect to login (except auth/landing paths)
@@ -56,11 +64,11 @@ export function Layout() {
 
   return (
     <>
-      <div className="flex min-h-screen bg-transparent text-foreground">
-        <aside 
-          className={`sticky top-0 flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[24px_0_60px_rgba(12,24,32,0.24)] transition-all duration-300 ${
-            collapsed ? 'w-16' : 'w-64'
-          }`}
+      <div className="flex min-h-screen bg-transparent text-foreground relative">
+        {/* Sidebar for Desktop */}
+        <aside
+          className={`sticky top-0 hidden h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[24px_0_60px_rgba(12,24,32,0.24)] transition-all duration-300 lg:flex ${collapsed ? 'w-16' : 'w-64'
+            }`}
         >
           <div className="border-b border-sidebar-border px-4 py-5">
             <div className="mb-6 flex items-center justify-between">
@@ -107,16 +115,15 @@ export function Layout() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
-              
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 transition ${
-                    isActive 
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-black/10' 
-                      : 'text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                  }`}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 transition ${isActive
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-black/10'
+                    : 'text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                    }`}
                   title={collapsed ? item.label : undefined}
                 >
                   <Icon className="size-5 flex-shrink-0" />
@@ -145,14 +152,78 @@ export function Layout() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-auto">
+        {/* Mobile Sidebar Overlay */}
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsMobileOpen(false)}
+          >
+            <div
+              className="h-full w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="border-b border-sidebar-border px-4 py-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.24em] text-sidebar-foreground/60">TaxGPT</p>
+                  <h1 className="text-xl font-bold text-sidebar-foreground">Planning cockpit</h1>
+                </div>
+                <button
+                  onClick={() => setIsMobileOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/5"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+              <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-3 transition ${isActive
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-black/10'
+                        : 'text-sidebar-foreground/72 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                        }`}
+                    >
+                      <Icon className="size-5 flex-shrink-0" />
+                      <span className="truncate text-sm font-medium">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="border-t border-sidebar-border px-3 py-4">
+                <button
+                  onClick={() => logout()}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-red-400 hover:bg-red-400/10 transition"
+                >
+                  <RefreshCcw className="size-5 flex-shrink-0" />
+                  <span className="text-sm">Logout</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="flex-1 overflow-auto w-full">
           <div className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4 px-6 py-4 lg:px-8">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Tax operations</p>
-                <div className="mt-1 flex items-center gap-3">
-                  <Sparkles className="size-5 text-chart-3" />
-                  <h2 className="text-xl font-bold">{pageTitle || "AI-guided financial control room"}</h2>
+            <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setIsMobileOpen(true)}
+                  className="lg:hidden p-2 rounded-xl bg-sidebar border border-sidebar-border text-sidebar-foreground"
+                >
+                  <Menu className="size-5" />
+                </button>
+                <div>
+                  <p className="text-[10px] md:text-xs uppercase tracking-[0.24em] text-muted-foreground">Tax operations</p>
+                  <div className="mt-1 flex items-center gap-2 md:gap-3">
+                    <Sparkles className="size-4 md:size-5 text-chart-3" />
+                    <h2 className="text-lg md:text-xl font-bold truncate max-w-[180px] sm:max-w-none">
+                      {pageTitle || "AI Control Room"}
+                    </h2>
+                  </div>
                 </div>
               </div>
 
@@ -165,12 +236,13 @@ export function Layout() {
                 )}
                 <Button
                   variant="outline"
-                  className="rounded-2xl border-border/70 bg-card/80"
+                  size="sm"
+                  className="rounded-2xl border-border/70 bg-card/80 px-2 sm:px-4"
                   onClick={() => void refreshAll()}
                   disabled={isLoading}
                 >
                   <RefreshCcw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
-                  Refresh data
+                  <span className="hidden sm:inline ml-1">Refresh</span>
                 </Button>
                 {/* auth links */}
                 {user ? (

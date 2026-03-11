@@ -26,7 +26,7 @@ async function request<T>(path: string, init?: RequestInit, retries = 3, retryDe
     try {
       const headers: Record<string, string> = {
         ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-        ...init?.headers,
+        ...(init?.headers as Record<string, string> || {}),
       };
       if (authToken) {
         headers.Authorization = `Bearer ${authToken}`;
@@ -42,7 +42,16 @@ async function request<T>(path: string, init?: RequestInit, retries = 3, retryDe
           await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
           continue;
         }
-        throw new Error(`Request failed: ${response.status}`);
+        let errorMsg = `Request failed: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMsg = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail);
+          }
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(errorMsg);
       }
 
       return response.json() as Promise<T>;

@@ -67,28 +67,28 @@ export function Dashboard() {
     <div className="space-y-6">
       <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
         <Card className="overflow-hidden border-border/70 bg-[linear-gradient(135deg,rgba(18,52,71,0.96),rgba(32,74,70,0.88))] text-white shadow-[0_24px_70px_rgba(18,52,71,0.25)]">
-          <CardContent className="p-8">
+          <CardContent className="p-5 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="max-w-2xl space-y-4">
                 <Badge className="rounded-full bg-white/12 px-4 py-1 text-[11px] uppercase tracking-[0.24em] text-white shadow-none hover:bg-white/12">
                   {dashboard.headline.year} planning cycle
                 </Badge>
                 <div className="space-y-3">
-                  <h1 className="text-4xl font-bold tracking-tight">{dashboard.headline.title}</h1>
-                  <p className="max-w-xl text-base text-white/72">{dashboard.headline.subtitle}</p>
+                  <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">{dashboard.headline.title}</h1>
+                  <p className="max-w-xl text-sm sm:text-base text-white/72">{dashboard.headline.subtitle}</p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
                   <div className="rounded-3xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/60">Taxable income</p>
-                    <p className="mt-2 text-2xl font-bold">{formatCurrency(dashboard.summary.taxableIncome)}</p>
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white/60">Taxable income</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold">{formatCurrency(dashboard.summary.taxableIncome)}</p>
                   </div>
                   <div className="rounded-3xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/60">Deductible spend</p>
-                    <p className="mt-2 text-2xl font-bold">{formatCurrency(dashboard.summary.deductibleExpenses)}</p>
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white/60">Deductible spend</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold">{formatCurrency(dashboard.summary.deductibleExpenses)}</p>
                   </div>
                   <div className="rounded-3xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/60">Next deadline</p>
-                    <p className="mt-2 text-2xl font-bold">{dashboard.upcomingDeadlines[0]?.daysLeft ?? 0}d</p>
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white/60">Next deadline</p>
+                    <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold">{dashboard.upcomingDeadlines[0]?.daysLeft ?? 0}d</p>
                   </div>
                 </div>
               </div>
@@ -96,8 +96,8 @@ export function Dashboard() {
               <div className="w-full max-w-sm rounded-[28px] border border-white/12 bg-black/15 p-5 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-white/55">Tax pressure</p>
-                    <p className="mt-2 text-4xl font-bold">{dashboard.summary.effectiveTaxRate}%</p>
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-white/55">Tax pressure</p>
+                    <p className="mt-1 sm:mt-2 text-3xl sm:text-4xl font-bold">{dashboard.summary.effectiveTaxRate}%</p>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-3">
                     <CalendarClock className="size-6" />

@@ -2,43 +2,43 @@
 
 :root {
   --font-size: 16px;
-  --background: #f5f2e8;
-  --foreground: #102430;
-  --card: rgba(255, 252, 245, 0.92);
-  --card-foreground: #102430;
-  --popover: #fffdf8;
-  --popover-foreground: #102430;
-  --primary: #123447;
-  --primary-foreground: #fff9ef;
-  --secondary: #dbe7e3;
-  --secondary-foreground: #123447;
-  --muted: #ece7da;
-  --muted-foreground: #5e6b73;
-  --accent: #d7e8de;
-  --accent-foreground: #123447;
-  --destructive: #d4183d;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: rgba(255, 255, 255, 0.95);
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: rgba(18, 52, 71, 0.12);
-  --input: transparent;
-  --input-background: rgba(255, 255, 255, 0.8);
-  --switch-background: #c0cbc8;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --switch-background: #cbd5e1;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #8eb29d;
-  --chart-1: #123447;
-  --chart-2: #4b8571;
-  --chart-3: #d88d32;
-  --chart-4: #8cae9c;
-  --chart-5: #b44c3b;
+  --ring: #0d9488;
+  --chart-1: #0d9488;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #3b82f6;
+  --chart-5: #ef4444;
   --radius: 1rem;
-  --sidebar: #173647;
-  --sidebar-foreground: #f4ead8;
-  --sidebar-primary: #e0efe8;
-  --sidebar-primary-foreground: #173647;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #fff7ea;
-  --sidebar-border: rgba(255, 255, 255, 0.09);
-  --sidebar-ring: #98c0ac;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0d9488;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0d9488;
 }
 
 .dark {
@@ -128,9 +128,9 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
     background-image:
-      radial-gradient(circle at top left, rgba(216, 141, 50, 0.18), transparent 32%),
-      radial-gradient(circle at 80% 10%, rgba(75, 133, 113, 0.18), transparent 24%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0));
+      radial-gradient(circle at top left, rgba(13, 148, 136, 0.05), transparent 32%),
+      radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.05), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(248, 250, 252, 1));
     min-height: 100vh;
   }
 

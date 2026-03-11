@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from typing import Optional
 import os
 from dotenv import load_dotenv
+from groq import Groq
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,7 +24,7 @@ from .db import get_db, object_id
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 # auth helpers
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from authlib.integrations.starlette_client import OAuth
 
@@ -34,7 +35,7 @@ app = FastAPI(title="TaxGPT API", version="1.0.0")
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 oauth = OAuth()
 oauth.register(
     name="google",
@@ -54,6 +55,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# Initializing Groq Client
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 IncomeType = Literal["salary", "freelance", "business", "investment"]
@@ -348,11 +352,14 @@ assistant_suggested_questions = [
 # authentication helpers
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -405,6 +412,7 @@ async def get_user_calculator_profile(db: AsyncIOMotorDatabase, user_id: str) ->
         profile = deepcopy(calculator_profile)
         profile["user_id"] = user_id
         await db["calculator_profiles"].insert_one(profile)
+    profile["_id"] = str(profile.get("_id", ""))
     return profile
 
 
@@ -415,6 +423,8 @@ async def get_user_deductions(db: AsyncIOMotorDatabase, user_id: str) -> list[di
         for item in items:
             item["user_id"] = user_id
         await db["deductions"].insert_many(items)
+    for item in items:
+        item["_id"] = str(item.get("_id", ""))
     return items
 
 
@@ -426,6 +436,8 @@ async def get_user_expenses(db: AsyncIOMotorDatabase, user_id: str) -> list[dict
         for item in items:
             item["user_id"] = user_id
         await db["expenses"].insert_many(items)
+    for item in items:
+        item["_id"] = str(item.get("_id", ""))
     return items
 
 
@@ -436,6 +448,8 @@ async def get_user_documents(db: AsyncIOMotorDatabase, user_id: str) -> list[dic
         for item in items:
             item["user_id"] = user_id
         await db["documents"].insert_many(items)
+    for item in items:
+        item["_id"] = str(item.get("_id", ""))
     return items
 
 
@@ -446,6 +460,8 @@ async def get_user_scenarios(db: AsyncIOMotorDatabase, user_id: str) -> list[dic
         for item in items:
             item["user_id"] = user_id
         await db["scenarios"].insert_many(items)
+    for item in items:
+        item["_id"] = str(item.get("_id", ""))
     return items
 
 
@@ -497,7 +513,7 @@ def calculate_tax(income: float) -> int:
 
 
 def total_income_calc(profile: dict) -> float:
-    return profile["salary"] + profile["freelance"] + profile["business"] + profile["investment"]
+    return profile.get("salary", 0) + profile.get("freelance", 0) + profile.get("business", 0) + profile.get("investment", 0)
 
 
 def income_sources_calc(profile: dict) -> list[dict]:
@@ -517,11 +533,11 @@ async def calculator_result(db: AsyncIOMotorDatabase, user_id: str) -> dict:
     income_total = total_income_calc(profile)
     deduction_total = sum(
         [
-            profile["standard"],
-            profile["retirement"],
-            profile["hsa"],
-            profile["studentLoan"],
-            profile["charitable"],
+            profile.get("standard", 0),
+            profile.get("retirement", 0),
+            profile.get("hsa", 0),
+            profile.get("studentLoan", 0),
+            profile.get("charitable", 0),
         ]
     )
     taxable_income = max(income_total - deduction_total, 0)
@@ -549,39 +565,56 @@ async def calculator_result(db: AsyncIOMotorDatabase, user_id: str) -> dict:
 
 
 async def ai_response(db: AsyncIOMotorDatabase, user_id: str, message: str) -> str:
-    lowered = message.lower()
     profile = await get_user_calculator_profile(db, user_id)
     user_deductions = await get_user_deductions(db, user_id)
     user_expenses = await get_user_expenses(db, user_id)
     user_documents = await get_user_documents(db, user_id)
 
-    total = total_income_calc(profile)
-    deduction_total = sum(d["amount"] for d in user_deductions if d["applied"])
-    tax_total = calculate_tax(max(total - deduction_total, 0))
-    
-    if "reduce" in lowered and "tax" in lowered:
-        return (
-            "To lower your tax bill quickly, focus on three levers: max out retirement, capture every deductible expense, "
-            "and document charitable giving. Based on your current profile, increasing retirement contributions by $10,000 "
-            f"would likely save about $2,200, while activating your unused deductions could trim another ${round(sum(d['amount'] for d in user_deductions if not d['applied']) * 0.22):,}."
-        )
-    if "deduction" in lowered:
-        available = [item for item in user_deductions if not item["applied"]]
-        lines = [f"- {item['type']}: ${item['amount']:,}" for item in available]
-        return "Here are the main deductions you still have available:\n\n" + "\n".join(lines)
-    if "freelance" in lowered or "self-employed" in lowered:
-        freelance_tax = round(profile["freelance"] * 0.153)
-        return (
-            "For freelance income, keep a separate tax reserve and make quarterly payments. "
-            f"With your current freelance income, self-employment tax is roughly ${freelance_tax:,}."
-        )
-    if "document" in lowered or "receipt" in lowered:
-        pending = [doc["name"] for doc in user_documents if doc["status"] != "processed"]
-        return "These documents still need attention: " + ", ".join(pending)
-    return (
-        f"Your current estimate shows ${tax_total:,} in tax on ${total:,} of income. "
-        "I can help you optimize deductions, review deadlines, or model a scenario if you want to go deeper."
+    income_total = total_income_calc(profile)
+    deduction_total = sum(d.get("amount", 0) for d in user_deductions if d.get("applied", False))
+    taxable_income = max(income_total - deduction_total, 0)
+    estimated_tax = calculate_tax(taxable_income)
+
+    # Prepare context for LLM
+    context = (
+        f"User Profile Info:\n"
+        f"- Filing Status: {profile.get('filingStatus', 'Single')}\n"
+        f"- Total Income: ${income_total:,}\n"
+        f"- Total Applied Deductions: ${deduction_total:,}\n"
+        f"- Estimated Tax: ${estimated_tax:,}\n"
+        f"- Taxable Income: ${taxable_income:,}\n"
+        f"\nDeductions List:\n"
+        + "\n".join([f"- {d.get('type')}: ${d.get('amount', 0)} ({ 'Applied' if d.get('applied') else 'Available' })" for d in user_deductions])
+        + f"\n\nExpenses: {len(user_expenses)} total records."
+        + f"\nDocuments: {len(user_documents)} total uploaded."
     )
+
+    try:
+        completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a professional tax assistant for TaxGPT. "
+                        "You provide concise, helpful, and accurate tax planning advice based on the user's specific profile data provided in the context. "
+                        "Always reference their real numbers when answering. "
+                        "If a question is not about taxes or finance, politely steer them back. "
+                        "Keep responses professional and easy to read with bullet points if needed."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Context:\n{context}\n\nUser Question: {message}"
+                }
+            ],
+            temperature=0.7,
+            max_tokens=1024,
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"Groq API Error: {e}")
+        return "I'm having trouble connecting to my brain right now. Please try again later."
 
 
 async def dashboard_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
@@ -610,6 +643,26 @@ async def dashboard_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
 
     expense_breakdown = [{"category": key, "amount": value} for key, value in category_totals.items()]
 
+    # Calculate dynamic monthly data from expenses
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    current_month_idx = datetime.now().month - 1
+    # Show last 6 months
+    show_months = []
+    for i in range(5, -1, -1):
+        idx = (current_month_idx - i) % 12
+        show_months.append(months[idx])
+
+    monthly_stats = []
+    avg_monthly_income = income_total / 12
+    for m_name in show_months:
+        m_expenses = sum(e["amount"] for e in user_expenses if datetime.fromisoformat(e["date"]).strftime("%b") == m_name)
+        monthly_stats.append({
+            "month": m_name,
+            "income": round(avg_monthly_income),
+            "expenses": round(m_expenses),
+            "tax": round(calculate_tax(max(avg_monthly_income - (deduction_total/12), 0)))
+        })
+
     return {
         "headline": {
             "title": "Tax command center",
@@ -625,14 +678,7 @@ async def dashboard_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
             "deductibleExpenses": sum(item["amount"] for item in user_expenses if item["deductible"]),
             "documentCoverage": round((len([doc for doc in user_documents if doc["status"] == "processed"]) / len(user_documents)) * 100) if user_documents else 0,
         },
-        "monthlyData": [
-            {"month": "Jan", "income": 8200, "expenses": 780, "tax": 1100},
-            {"month": "Feb", "income": 7800, "expenses": 650, "tax": 1050},
-            {"month": "Mar", "income": 8500, "expenses": 920, "tax": 1150},
-            {"month": "Apr", "income": 9200, "expenses": 540, "tax": 1250},
-            {"month": "May", "income": 7600, "expenses": 890, "tax": 1020},
-            {"month": "Jun", "income": 8100, "expenses": 710, "tax": 1090},
-        ],
+        "monthlyData": monthly_stats,
         "incomeBreakdown": income_breakdown,
         "expenseBreakdown": expense_breakdown,
         "upcomingDeadlines": deadlines,
@@ -649,9 +695,9 @@ async def dashboard_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
             },
         ],
         "actions": [
-            {"title": "Review deductions", "description": f"Unlock about ${round(potential_amount * 0.22):,} in tax savings.", "path": "/deductions"},
-            {"title": "Reconcile receipts", "description": f"Track ${expense_total:,} in expenses and confirm deductibility.", "path": "/expenses"},
-            {"title": "Upload missing documents", "description": "Complete the file set before quarter-end filing deadlines.", "path": "/documents"},
+            {"title": "Review deductions", "description": f"Unlock about ${round(potential_amount * 0.22):,} in tax savings.", "path": "/app/deductions"},
+            {"title": "Reconcile receipts", "description": f"Track ${expense_total:,} in expenses and confirm deductibility.", "path": "/app/expenses"},
+            {"title": "Upload missing documents", "description": "Complete the file set before quarter-end filing deadlines.", "path": "/app/documents"},
         ],
     }
 

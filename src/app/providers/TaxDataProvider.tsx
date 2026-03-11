@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import {
   createContext,
   useCallback,
@@ -127,33 +128,33 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
     // capture token from query string (google callback)
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get("token");
+    const storedToken = localStorage.getItem("authToken");
+
+    const initData = async (token: string) => {
+      setAuthToken(token);
+      try {
+        const u = await api.getCurrentUser();
+        setUser(u);
+        await refreshAll();
+      } catch {
+        setAuthToken(null);
+        localStorage.removeItem("authToken");
+        setIsLoading(false);
+      }
+    };
+
     if (tokenParam) {
-      setAuthToken(tokenParam);
       localStorage.setItem("authToken", tokenParam);
-      api.getCurrentUser()
-        .then((u) => setUser(u))
-        .catch(() => {
-          setAuthToken(null);
-          localStorage.removeItem("authToken");
-        });
       // remove token from url
       params.delete("token");
-      const newUrl = `${window.location.pathname}${
-        params.toString() ? "?" + params.toString() : ""
-      }`;
+      const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""
+        }`;
       window.history.replaceState({}, "", newUrl);
-    }
-
-    void refreshAll();
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      setAuthToken(token);
-      api.getCurrentUser()
-        .then((u) => setUser(u))
-        .catch(() => {
-          setAuthToken(null);
-          localStorage.removeItem("authToken");
-        });
+      void initData(tokenParam);
+    } else if (storedToken) {
+      void initData(storedToken);
+    } else {
+      setIsLoading(false);
     }
   }, [refreshAll]);
 
@@ -227,6 +228,7 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
       setAuthToken(fakeToken);
       localStorage.setItem("authToken", fakeToken);
       setUser({ id: "user-1", email: username, full_name: "Test User" });
+      await refreshAll();
       return;
     }
     const tokenResp = await api.login({ username, password });
@@ -235,7 +237,8 @@ export function TaxDataProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("authToken", tokenResp.access_token);
     const userInfo = await api.getCurrentUser();
     setUser(userInfo);
-  }, []);
+    await refreshAll();
+  }, [refreshAll]);
 
   const register = useCallback(async (email: string, full_name: string | undefined, password: string) => {
     if (USE_DUMMY_AUTH) {
