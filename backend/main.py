@@ -7,11 +7,16 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 
 from typing import Optional
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # database
 from .db import get_db, object_id
@@ -48,6 +53,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 
 IncomeType = Literal["salary", "freelance", "business", "investment"]
@@ -692,32 +698,6 @@ async def deductions_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
             },
         ],
     }
-                "title": "Increase 401(k) Contributions",
-                "currentAmount": calculator_profile["retirement"],
-                "recommendedAmount": 18000,
-                "potentialSavings": 2200,
-                "difficulty": "Easy",
-                "reason": "Retirement contributions are still well below the annual ceiling.",
-            },
-            {
-                "title": "Activate Student Loan Interest",
-                "currentAmount": calculator_profile["studentLoan"],
-                "recommendedAmount": 2500,
-                "potentialSavings": 550,
-                "difficulty": "Easy",
-                "reason": "You can claim up to $2,500 of qualified interest with documentation.",
-            },
-            {
-                "title": "Document Charitable Giving",
-                "currentAmount": calculator_profile["charitable"],
-                "recommendedAmount": 1200,
-                "potentialSavings": 264,
-                "difficulty": "Easy",
-                "reason": "Receipts would unlock a direct write-off for documented donations.",
-            },
-        ],
-    }
-
 
 async def expenses_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
     user_expenses = await get_user_expenses(db, user_id)
