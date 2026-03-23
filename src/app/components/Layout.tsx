@@ -220,7 +220,7 @@ export function Layout() {
 
         <main className="flex-1 overflow-auto w-full flex flex-col min-h-screen">
           <div className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-            <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
+            <div className="mx-auto flex max-w-none items-center justify-between gap-4 px-4 py-4 lg:px-8">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setIsMobileOpen(true)}
@@ -316,7 +316,7 @@ export function Layout() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-[1680px] px-4 py-6 lg:px-8 lg:py-8 flex-1">
+          <div className="mx-auto max-w-none px-4 py-6 lg:px-8 lg:py-8 flex-1">
             <Outlet />
           </div>
           <Footer />

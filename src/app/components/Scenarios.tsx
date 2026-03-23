@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "./ui/badge";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -12,7 +13,7 @@ import { useTaxData } from "../providers/TaxDataProvider";
 import type { ScenarioSimulation } from "../lib/types";
 
 export function Scenarios() {
-  const { scenarios, simulateScenario, saveScenario, isLoading, error } = useTaxData();
+  const { scenarios, simulateScenario, saveScenario, dashboard, isLoading, error } = useTaxData();
   const [baseIncome, setBaseIncome] = useState(0);
   const [baseDeductions, setBaseDeductions] = useState(0);
   const [additionalInvestment, setAdditionalInvestment] = useState(0);
@@ -20,11 +21,15 @@ export function Scenarios() {
 
   useEffect(() => {
     if (scenarios) {
-      setBaseIncome(scenarios.baseIncome);
-      setBaseDeductions(scenarios.baseDeductions);
+      // Prioritize dashboard data for consistency if available
+      const currentIncome = dashboard?.summary.totalIncome ?? scenarios.baseIncome;
+      const currentDeductions = dashboard?.summary.totalDeductions ?? scenarios.baseDeductions;
+      
+      setBaseIncome(currentIncome);
+      setBaseDeductions(currentDeductions);
       setSimulation(scenarios.simulation);
     }
-  }, [scenarios]);
+  }, [scenarios, dashboard]);
 
   if (isLoading && !scenarios) {
     return <div className="rounded-[28px] border border-border/70 bg-card p-10 text-sm text-muted-foreground shadow-sm">Loading scenarios...</div>;
@@ -127,13 +132,20 @@ export function Scenarios() {
                   <Button
                     variant="outline"
                     className="w-full rounded-2xl gap-2"
-                    onClick={() => void saveScenario({
-                      name: `Custom $${additionalInvestment.toLocaleString()} plan`,
-                      description: "Saved from the interactive simulator.",
-                      additionalInvestment,
-                      additionalDeductions: additionalInvestment,
-                      projectedSavings: simulation.taxSavings,
-                    })}
+                    onClick={async () => {
+                      try {
+                        await saveScenario({
+                          name: `Custom $${additionalInvestment.toLocaleString()} plan`,
+                          description: "Saved from the interactive simulator.",
+                          additionalInvestment,
+                          additionalDeductions: additionalInvestment,
+                          projectedSavings: simulation.taxSavings,
+                        });
+                        toast.success("Scenario saved successfully!");
+                      } catch (err) {
+                        toast.error("Failed to save scenario.");
+                      }
+                    }}
                   >
                     <Save className="size-4" /> Save This Scenario
                   </Button>
@@ -144,20 +156,20 @@ export function Scenarios() {
             {/* Right: Results */}
             <div className="space-y-5">
               {/* Result stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="border-border/70 bg-card/92 shadow-sm">
+              <div className="flex flex-wrap gap-4">
+                <Card className="flex-1 min-w-[240px] border-border/70 bg-card/92 shadow-sm">
                   <CardContent className="p-6">
                     <p className="text-xs uppercase tracking-widest text-muted-foreground">New Estimated Tax</p>
                     <p className="mt-2 text-3xl font-bold text-primary">${simulation.newTax.toLocaleString()}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-emerald-200 bg-emerald-50 shadow-sm">
+                <Card className="flex-1 min-w-[240px] border-emerald-200 bg-emerald-50 shadow-sm">
                   <CardContent className="p-6">
                     <p className="text-xs uppercase tracking-widest text-emerald-700">Tax Saved</p>
                     <p className="mt-2 text-3xl font-bold text-emerald-700">${simulation.taxSavings.toLocaleString()}</p>
                   </CardContent>
                 </Card>
-                <Card className="border-border/70 bg-card/92 shadow-sm">
+                <Card className="flex-1 min-w-[240px] border-border/70 bg-card/92 shadow-sm">
                   <CardContent className="p-6 flex items-center gap-3">
                     <TrendingDown className="size-8 text-primary" />
                     <div>

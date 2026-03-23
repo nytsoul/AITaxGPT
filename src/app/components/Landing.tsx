@@ -35,7 +35,7 @@ export function Landing() {
       <FloatingCurrencies count={15} />
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-45 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="max-w-none mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 shadow-lg shadow-teal-500/10">
               <span className="text-white font-bold text-lg leading-none">T</span>
@@ -105,12 +105,12 @@ export function Landing() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(248,250,252,1),rgba(204,251,241,0.2))]"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 opacity-60">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-none h-full -z-10 opacity-60">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/10 blur-[120px] rounded-full"></div>
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/10 blur-[120px] rounded-full"></div>
         </div>
 
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-none mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,7 +154,7 @@ export function Landing() {
 
       {/* Trust Bar */}
       <section className="py-10 border-y border-slate-200 bg-white/40 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 overflow-hidden">
+        <div className="max-w-none mx-auto px-6 overflow-hidden">
           <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-8">Integrated with your financial stack</p>
           <div className="flex flex-wrap justify-center items-center gap-12 opacity-30">
             {['QuickBooks', 'Stripe', 'TurboTax', 'Expensify', 'Shopify'].map((brand) => (
@@ -166,7 +166,7 @@ export function Landing() {
 
       {/* Features Grid */}
       <section id="features" className="py-24 px-6 relative bg-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-none mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight text-slate-900">Everything you need, <br className="hidden md:block" />nothing you don't</h2>
             <p className="text-slate-600 max-w-xl mx-auto">Powerful capabilities engineered to give you complete visibility into your tax obligations.</p>
@@ -209,7 +209,7 @@ export function Landing() {
 
       {/* How it Works */}
       <section id="how-it-works" className="py-24 px-6 bg-slate-50 border-y border-slate-200 relative">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
+        <div className="max-w-none mx-auto flex flex-col md:flex-row items-center gap-16">
           <div className="flex-1">
             <h2 className="text-3xl md:text-6xl font-bold mb-8 leading-tight text-slate-900">Tax planning as simple as a conversation</h2>
             <div className="space-y-12">
@@ -249,7 +249,7 @@ export function Landing() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-24 px-6 relative bg-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-none mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight text-slate-900">Transparent structuring</h2>
             <p className="text-slate-600">Choose the plan that's right for your financial complexity.</p>
@@ -284,7 +284,7 @@ export function Landing() {
 
       {/* Testimonials */}
       <section className="py-24 px-6 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-none mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
             <div className="max-w-xl">
               <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight text-slate-900">Loved by high-performers</h2>
@@ -318,7 +318,7 @@ export function Landing() {
 
       {/* FAQ Section */}
       <section className="py-24 px-6 relative bg-white">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-none mx-auto">
           <h2 className="text-3xl md:text-5xl font-bold mb-12 text-center tracking-tight text-slate-900">Frequently asked questions</h2>
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1" className="border-b-slate-200">
@@ -345,7 +345,7 @@ export function Landing() {
 
       {/* CTA Section */}
       <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto bg-gradient-to-r from-teal-600 to-emerald-700 rounded-[2rem] p-12 text-white text-center shadow-2xl overflow-hidden relative border border-white/20">
+        <div className="max-w-none mx-auto bg-gradient-to-r from-teal-600 to-emerald-700 rounded-[2rem] p-12 text-white text-center shadow-2xl overflow-hidden relative border border-white/20">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 blur-[80px] rounded-full"></div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -366,7 +366,7 @@ export function Landing() {
 
       {/* Footer */}
       <footer className="bg-slate-50 border-t border-slate-200 pt-20 pb-10 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-none mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-16">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-6">
