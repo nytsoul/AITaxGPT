@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import date, datetime, timedelta
+from io import BytesIO
+import re
 from typing import Literal
 from uuid import uuid4
 
@@ -15,6 +17,11 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 from groq import Groq
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 
 # Load environment variables from .env file
 load_dotenv()
@@ -134,13 +141,13 @@ class TokenData(BaseModel):
 
 calculator_profile = {
     "filingStatus": "single",
-    "salary": 75000,
-    "freelance": 15000,
+    "salary": 0,
+    "freelance": 0,
     "business": 0,
-    "investment": 5000,
-    "standard": 13850,
-    "retirement": 8000,
-    "hsa": 3600,
+    "investment": 0,
+    "standard": 0,
+    "retirement": 0,
+    "hsa": 0,
     "studentLoan": 0,
     "charitable": 0,
 }
@@ -150,151 +157,44 @@ deductions = [
         "id": "ded-1",
         "type": "Standard Deduction",
         "description": "Standard deduction for single filer",
-        "amount": 13850,
-        "applied": True,
+        "amount": 0,
+        "applied": False,
     },
     {
         "id": "ded-2",
         "type": "Retirement Contribution",
         "description": "401(k) contribution",
-        "amount": 8000,
-        "applied": True,
+        "amount": 0,
+        "applied": False,
     },
     {
         "id": "ded-3",
         "type": "Health Savings Account",
         "description": "HSA contribution",
-        "amount": 3600,
-        "applied": True,
+        "amount": 0,
+        "applied": False,
     },
     {
         "id": "ded-4",
         "type": "Student Loan Interest",
         "description": "Interest paid on qualified student loans",
-        "amount": 2500,
+        "amount": 0,
         "applied": False,
     },
     {
         "id": "ded-5",
         "type": "Charitable Contributions",
         "description": "Documented donations to qualified charities",
-        "amount": 1200,
+        "amount": 0,
         "applied": False,
     },
 ]
 
-expenses = [
-    {
-        "id": "exp-1",
-        "category": "business",
-        "description": "Home Office Equipment",
-        "amount": 2500,
-        "date": "2026-01-15",
-        "deductible": True,
-    },
-    {
-        "id": "exp-2",
-        "category": "education",
-        "description": "Professional Course",
-        "amount": 1500,
-        "date": "2026-02-20",
-        "deductible": True,
-    },
-    {
-        "id": "exp-3",
-        "category": "medical",
-        "description": "Health Insurance Premium",
-        "amount": 3600,
-        "date": "2026-01-01",
-        "deductible": True,
-    },
-    {
-        "id": "exp-4",
-        "category": "travel",
-        "description": "Business Trip",
-        "amount": 1200,
-        "date": "2026-03-10",
-        "deductible": True,
-    },
-    {
-        "id": "exp-5",
-        "category": "other",
-        "description": "Personal Shopping",
-        "amount": 800,
-        "date": "2026-02-14",
-        "deductible": False,
-    },
-]
+expenses = []
 
-documents = [
-    {
-        "id": "doc-1",
-        "name": "W2_2025.pdf",
-        "type": "PDF",
-        "category": "Income",
-        "size": "245 KB",
-        "uploadDate": "2026-02-15",
-        "status": "processed",
-        "extractedData": {"amount": 75000, "date": "2025-12-31", "vendor": "ABC Corporation"},
-    },
-    {
-        "id": "doc-2",
-        "name": "health_insurance_receipt.jpg",
-        "type": "Image",
-        "category": "Medical",
-        "size": "1.2 MB",
-        "uploadDate": "2026-01-10",
-        "status": "processed",
-        "extractedData": {"amount": 3600, "date": "2026-01-01", "vendor": "HealthCare Plus"},
-    },
-    {
-        "id": "doc-3",
-        "name": "home_office_invoice.pdf",
-        "type": "PDF",
-        "category": "Business",
-        "size": "180 KB",
-        "uploadDate": "2026-01-20",
-        "status": "processed",
-        "extractedData": {"amount": 2500, "date": "2026-01-15", "vendor": "Office Depot"},
-    },
-    {
-        "id": "doc-4",
-        "name": "education_receipt.pdf",
-        "type": "PDF",
-        "category": "Education",
-        "size": "95 KB",
-        "uploadDate": "2026-02-25",
-        "status": "processing",
-        "extractedData": None,
-    },
-]
+documents = []
 
-scenarios = [
-    {
-        "id": "scn-1",
-        "name": "Maximize Retirement",
-        "description": "Increase 401(k) contribution to the annual limit.",
-        "additionalInvestment": 10000,
-        "additionalDeductions": 10000,
-        "projectedSavings": 2200,
-    },
-    {
-        "id": "scn-2",
-        "name": "Health Savings Strategy",
-        "description": "Max out HSA contributions to lower taxable income.",
-        "additionalInvestment": 4500,
-        "additionalDeductions": 4500,
-        "projectedSavings": 990,
-    },
-    {
-        "id": "scn-3",
-        "name": "Education Investment",
-        "description": "Channel funds into an education savings plan.",
-        "additionalInvestment": 5000,
-        "additionalDeductions": 5000,
-        "projectedSavings": 1100,
-    },
-]
+scenarios = []
 
 yearly_data = [
     {"year": 2023, "totalIncome": 65000, "totalDeductions": 18000, "taxableIncome": 47000, "taxPaid": 7800},
@@ -430,12 +330,6 @@ async def get_user_deductions(db: AsyncIOMotorDatabase, user_id: str) -> list[di
 
 async def get_user_expenses(db: AsyncIOMotorDatabase, user_id: str) -> list[dict]:
     items = await db["expenses"].find({"user_id": user_id}).to_list(length=1000)
-    if not items:
-        # for initial users, we might want some demo expenses or empty
-        items = deepcopy(expenses)
-        for item in items:
-            item["user_id"] = user_id
-        await db["expenses"].insert_many(items)
     for item in items:
         item["_id"] = str(item.get("_id", ""))
     return items
@@ -443,11 +337,6 @@ async def get_user_expenses(db: AsyncIOMotorDatabase, user_id: str) -> list[dict
 
 async def get_user_documents(db: AsyncIOMotorDatabase, user_id: str) -> list[dict]:
     items = await db["documents"].find({"user_id": user_id}).to_list(length=100)
-    if not items:
-        items = deepcopy(documents)
-        for item in items:
-            item["user_id"] = user_id
-        await db["documents"].insert_many(items)
     for item in items:
         item["_id"] = str(item.get("_id", ""))
     return items
@@ -455,11 +344,6 @@ async def get_user_documents(db: AsyncIOMotorDatabase, user_id: str) -> list[dic
 
 async def get_user_scenarios(db: AsyncIOMotorDatabase, user_id: str) -> list[dict]:
     items = await db["scenarios"].find({"user_id": user_id}).to_list(length=100)
-    if not items:
-        items = deepcopy(scenarios)
-        for item in items:
-            item["user_id"] = user_id
-        await db["scenarios"].insert_many(items)
     for item in items:
         item["_id"] = str(item.get("_id", ""))
     return items
@@ -869,6 +753,155 @@ async def documents_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
     }
 
 
+_CURRENCY_RE = re.compile(r"(?:USD|US\$|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.\d{1,2})?|[0-9]+(?:\.\d{1,2})?)", re.IGNORECASE)
+_DATE_ISO_RE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+_DATE_SLASH_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b")
+_DATE_LONG_RE = re.compile(r"\b(?:Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December)\s+\d{1,2},\s+\d{4}\b", re.IGNORECASE)
+
+
+def parse_vendor_from_filename(filename: str) -> str | None:
+    stem = filename.rsplit(".", 1)[0].strip()
+    if not stem:
+        return None
+    cleaned = re.sub(r"[_-]+", " ", stem)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned.title() if cleaned else None
+
+
+def parse_pdf_text(file_bytes: bytes) -> str:
+    texts: list[str] = []
+    if PdfReader is not None:
+        try:
+            reader = PdfReader(BytesIO(file_bytes))
+            for page in reader.pages[:8]:
+                page_text = page.extract_text() or ""
+                if page_text.strip():
+                    texts.append(page_text)
+        except Exception:
+            pass
+
+    # Fallback for PDFs where extraction libraries cannot decode page content cleanly.
+    if not texts:
+        raw = file_bytes.decode("latin-1", errors="ignore")
+        snippets = re.findall(r"\(([^\)]{3,200})\)", raw)
+        if snippets:
+            texts.extend(snippets[:30])
+
+    return "\n".join(texts)
+
+
+def parse_amount_from_text(text: str) -> float | None:
+    if not text:
+        return None
+    amounts: list[float] = []
+    seen: set[float] = set()
+
+    def add_amount(raw_amount: str) -> None:
+        raw = raw_amount.replace(",", "")
+        try:
+            value = float(raw)
+        except ValueError:
+            return
+        if value.is_integer() and 1900 <= value <= 2100:
+            return
+        if 1 <= value <= 10_000_000 and value not in seen:
+            seen.add(value)
+            amounts.append(value)
+
+    labeled_amount_re = re.compile(r"(?:total|amount\s+due|invoice\s+total|net\s+pay)\D{0,20}([0-9]{1,3}(?:,[0-9]{3})*(?:\.\d{1,2})?|[0-9]+(?:\.\d{1,2})?)", re.IGNORECASE)
+    for match in labeled_amount_re.finditer(text):
+        add_amount(match.group(1))
+
+    for match in _CURRENCY_RE.finditer(text):
+        add_amount(match.group(1))
+
+    decimal_re = re.compile(r"\b([0-9]{1,7}\.\d{2})\b")
+    for match in decimal_re.finditer(text):
+        add_amount(match.group(1))
+
+    large_int_re = re.compile(r"\b([1-9][0-9]{3,7})\b")
+    for match in large_int_re.finditer(text):
+        add_amount(match.group(1))
+
+    if not amounts:
+        return None
+    return round(max(amounts), 2)
+
+
+def parse_date_from_text(text: str) -> str | None:
+    if not text:
+        return None
+
+    iso_match = _DATE_ISO_RE.search(text)
+    if iso_match:
+        try:
+            return date(int(iso_match.group(1)), int(iso_match.group(2)), int(iso_match.group(3))).isoformat()
+        except ValueError:
+            pass
+
+    slash_match = _DATE_SLASH_RE.search(text)
+    if slash_match:
+        month = int(slash_match.group(1))
+        day = int(slash_match.group(2))
+        year = int(slash_match.group(3))
+        if year < 100:
+            year += 2000
+        try:
+            return date(year, month, day).isoformat()
+        except ValueError:
+            pass
+
+    long_match = _DATE_LONG_RE.search(text)
+    if long_match:
+        raw = long_match.group(0)
+        for fmt in ("%b %d, %Y", "%B %d, %Y"):
+            try:
+                return datetime.strptime(raw, fmt).date().isoformat()
+            except ValueError:
+                continue
+
+    return None
+
+
+def parse_vendor_from_text(text: str) -> str | None:
+    if not text:
+        return None
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    signal_words = ("vendor", "merchant", "seller", "payee", "billed by", "bill from", "from")
+    for line in lines[:40]:
+        low = line.lower()
+        if any(word in low for word in signal_words):
+            tagged = re.search(r"(?:vendor|merchant|seller|payee|billed by|bill from|from)\s*[:\-]?\s*(.+)$", line, re.IGNORECASE)
+            candidate = tagged.group(1).strip() if tagged else line
+            candidate = re.sub(r"^\d{1,2}[-/]\d{1,2}\s+", "", candidate)
+            candidate = re.sub(r"^(?:vendor|merchant|seller|payee)\s+", "", candidate, flags=re.IGNORECASE)
+            candidate = re.sub(r"\s+", " ", candidate)
+            if 2 <= len(candidate) <= 80:
+                return candidate
+    if lines:
+        header = re.sub(r"\s+", " ", lines[0])
+        if 2 <= len(header) <= 80:
+            return header
+    return None
+
+
+def extract_document_data(filename: str, file_bytes: bytes, is_pdf: bool) -> dict | None:
+    text = parse_pdf_text(file_bytes) if is_pdf else ""
+    amount = parse_amount_from_text(text)
+    doc_date = parse_date_from_text(text)
+    vendor = parse_vendor_from_text(text) or parse_vendor_from_filename(filename)
+
+    extracted: dict[str, float | str] = {}
+    if amount is not None:
+        extracted["amount"] = amount
+    if doc_date:
+        extracted["date"] = doc_date
+    if vendor:
+        extracted["vendor"] = vendor
+
+    return extracted or None
+
+
 async def scenarios_payload(db: AsyncIOMotorDatabase, user_id: str) -> dict:
     profile = await get_user_calculator_profile(db, user_id)
     user_deductions = await get_user_deductions(db, user_id)
@@ -1144,23 +1177,34 @@ async def upload_document(
 ) -> dict:
     db = get_db()
     user_id = str(current_user["_id"])
+    filename = file.filename or "uploaded-file"
+    lower_name = filename.lower()
+    is_pdf = lower_name.endswith(".pdf") or file.content_type == "application/pdf"
+    is_image = lower_name.endswith((".jpg", ".jpeg", ".png")) or file.content_type in {"image/jpeg", "image/png"}
+    if not (is_pdf or is_image):
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF, JPG, or PNG.")
+
     file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    max_bytes = 10 * 1024 * 1024
+    if len(file_bytes) > max_bytes:
+        raise HTTPException(status_code=400, detail="File is too large. Maximum size is 10MB.")
+
     size_kb = max(1, round(len(file_bytes) / 1024))
-    inferred_amount = 500 + (size_kb % 20) * 75
+    extracted = extract_document_data(filename, file_bytes, is_pdf)
+
     await db["documents"].insert_one({
         "user_id": user_id,
         "id": str(uuid4()),
-        "name": file.filename,
-        "type": "PDF" if file.filename.lower().endswith(".pdf") else "Image",
+        "name": filename,
+        "type": "PDF" if is_pdf else "Image",
         "category": category,
         "size": f"{size_kb} KB",
         "uploadDate": date.today().isoformat(),
         "status": "processed",
-        "extractedData": {
-            "amount": inferred_amount,
-            "date": date.today().isoformat(),
-            "vendor": file.filename.rsplit(".", 1)[0].replace("_", " ").title(),
-        },
+        "extractedData": extracted,
     })
     return await documents_payload(db, user_id)
 

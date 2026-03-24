@@ -127,7 +127,7 @@ export function Documents() {
                   <Button className="rounded-2xl" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                     Browse Files
                   </Button>
-                  <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { handleUpload(e.target.files?.[0] ?? null); e.currentTarget.value = ""; }} />
+                  <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="hidden" onChange={(e) => { handleUpload(e.target.files?.[0] ?? null); e.currentTarget.value = ""; }} />
                 </div>
               </CardContent>
             </Card>
